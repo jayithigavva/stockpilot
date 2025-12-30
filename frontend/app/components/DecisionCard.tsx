@@ -11,8 +11,13 @@ interface DecisionCardProps {
     stockout_probability_after: number
     risk_category_before: string
     risk_category_after: string
+    expected_overstock_cost?: number
+    expected_understock_cost?: number
+    total_expected_loss?: number
     cash_locked: number
     cash_freed: number
+    explanation?: string
+    product_id: string
   }
   onViewDetails: () => void
   onAccept: () => void
