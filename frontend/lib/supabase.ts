@@ -307,29 +307,74 @@ export const dashboardAPI = {
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true)
 
-    // Get pending decisions count
-    const { count: pendingCount } = await supabase
+    // Get pending decisions
+    const { data: pendingDecisions } = await supabase
       .from('reorder_decisions')
-      .select('*', { count: 'exact', head: true })
+      .select(`
+        *,
+        product:products(id, name, sku, unit_cost, selling_price)
+      `)
       .eq('status', 'PENDING')
+      .order('total_expected_loss', { ascending: false })
 
-    // Get total inventory value
+    // Get all inventory with products
     const { data: inventoryData } = await supabase
       .from('inventory')
       .select(`
         current_quantity,
-        product:products(unit_cost)
+        product:products(id, name, sku, unit_cost, selling_price, brand_id)
       `)
 
+    // Calculate total inventory value
     const totalValue = inventoryData?.reduce((sum, inv) => {
       const cost = (inv.product as any)?.unit_cost || 0
       return sum + (inv.current_quantity * cost)
     }, 0) || 0
 
+    // Calculate inventory at risk (high risk products)
+    const { data: highRiskDecisions } = await supabase
+      .from('reorder_decisions')
+      .select(`
+        cash_locked,
+        product:products(unit_cost)
+      `)
+      .eq('status', 'PENDING')
+      .eq('risk_category_before', 'HIGH')
+
+    const inventoryAtRisk = highRiskDecisions?.reduce((sum, d) => {
+      const cost = (d.product as any)?.unit_cost || 0
+      return sum + (d.cash_locked || 0)
+    }, 0) || 0
+
+    // Count high risk SKUs
+    const { count: highRiskCount } = await supabase
+      .from('reorder_decisions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'PENDING')
+      .eq('risk_category_before', 'HIGH')
+
+    // Calculate average days of cover (simplified - would need sales history)
+    // For now, return placeholder
+    const avgDaysOfCover = 23 // TODO: Calculate from sales history
+
+    // Calculate cash freed (sum of cash_freed from accepted decisions in current cycle)
+    const { data: recentAccepted } = await supabase
+      .from('reorder_decisions')
+      .select('cash_freed')
+      .eq('status', 'ACCEPTED')
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+
+    const cashFreed = recentAccepted?.reduce((sum, d) => sum + (parseFloat(d.cash_freed || 0)), 0) || 0
+
     return {
       total_products: productCount || 0,
-      pending_decisions: pendingCount || 0,
+      pending_decisions: pendingDecisions?.length || 0,
       total_inventory_value: totalValue,
+      inventory_at_risk: inventoryAtRisk,
+      high_risk_skus: highRiskCount || 0,
+      avg_days_of_cover: avgDaysOfCover,
+      cash_freed: cashFreed,
+      pending_decisions_list: pendingDecisions || [],
     }
   },
 }
