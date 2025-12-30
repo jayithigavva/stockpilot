@@ -1,0 +1,41 @@
+name: stockpilot-backend
+region: nyc
+services:
+- name: api
+  github:
+    repo: jayithigavva/stockpilot
+    branch: main
+    deploy_on_push: true
+  run_command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+  environment_slug: python
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  source_dir: backend
+  envs:
+  - key: DATABASE_URL
+    scope: RUN_TIME
+    value: ${db.DATABASE_URL}
+  - key: SECRET_KEY
+    scope: RUN_TIME
+    value: ${SECRET_KEY}
+  - key: CORS_ORIGINS
+    scope: RUN_TIME
+    value: ${CORS_ORIGINS}
+  - key: DEBUG
+    scope: RUN_TIME
+    value: "False"
+  health_check:
+    http_path: /health
+    initial_delay_seconds: 30
+    period_seconds: 10
+    timeout_seconds: 5
+    success_threshold: 1
+    failure_threshold: 3
+
+databases:
+- name: db
+  engine: PG
+  version: "15"
+  production: false
+  cluster_name: stockpilot-db
+

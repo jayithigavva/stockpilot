@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { authAPI } from '@/lib/api'
+import { authAPI } from '@/lib/supabase'
 import Link from 'next/link'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -30,10 +30,10 @@ export default function RegisterPage() {
         formData.fullName,
         formData.brandName
       )
-      localStorage.setItem('access_token', response.access_token)
+      // Token is stored automatically by Supabase
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed')
+      setError(err.message || 'Registration failed')
     } finally {
       setLoading(false)
     }
@@ -43,7 +43,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-navy-50 via-primary-50 to-navy-50">
       <Navbar />
       <div className="flex-1 flex items-center justify-center py-12">
-      <div className="max-w-md w-full bg-gradient-to-br from-white to-navy-50 rounded-2xl shadow-2xl p-10 border-2 border-primary-200">
+        <div className="max-w-md w-full bg-gradient-to-br from-white to-navy-50 rounded-2xl shadow-2xl p-10 border-2 border-primary-200">
         <h1 className="text-3xl font-display font-bold text-center mb-2 tracking-tight">Sign Up</h1>
         <p className="text-gray-600 text-center mb-8 font-light">Create your account</p>
 
@@ -120,6 +120,7 @@ export default function RegisterPage() {
             Login
           </Link>
         </p>
+        </div>
       </div>
       <Footer />
     </div>
