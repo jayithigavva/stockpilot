@@ -19,6 +19,8 @@ interface DashboardStats {
   cash_freed: number
   pending_decisions: number
   pending_decisions_list: any[]
+  available_cash: number
+  free_plan_days_remaining: number | null
 }
 
 interface SelectedDecision {
@@ -153,7 +155,20 @@ export default function DashboardPage() {
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900">Inventory Health</h1>
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">Inventory Health</h1>
+                {stats.free_plan_days_remaining !== null && stats.free_plan_days_remaining <= 7 && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      stats.free_plan_days_remaining <= 3
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {stats.free_plan_days_remaining} days left on free plan
+                    </span>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={handleRunAI}
                 disabled={generating}
@@ -192,13 +207,13 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Card 3: Days of Cover */}
+              {/* Card 3: Available Cash */}
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-                <div className="text-sm font-medium text-gray-600 mb-1">Days of Cover</div>
+                <div className="text-sm font-medium text-gray-600 mb-1">Available Cash</div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {stats.avg_days_of_cover} days
+                  {formatCurrency(stats.available_cash)}
                 </div>
-                <div className="text-xs text-gray-600">Target: 30 days</div>
+                <div className="text-xs text-gray-600">For inventory purchases</div>
               </div>
 
               {/* Card 4: Cash Freed */}
