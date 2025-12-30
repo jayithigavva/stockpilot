@@ -5,6 +5,14 @@ const nextConfig = {
     remotePatterns: [],
     unoptimized: false,
   },
+  // Ensure path aliases work correctly
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname),
+    }
+    return config
+  },
 }
 
 module.exports = nextConfig
