@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { decisionsAPI } from '@/lib/supabase'
@@ -79,7 +81,7 @@ export default function DecisionsPage() {
   }
 
   const handleAccept = async (decisionId: string) => {
-    setAccepting(parseInt(decisionId))
+    setAccepting(decisionId)
     try {
       await decisionsAPI.accept(decisionId)
       await loadRecommendations()
@@ -210,10 +212,10 @@ export default function DecisionsPage() {
                 <div className="flex space-x-4">
                   <button
                     onClick={() => handleAccept(rec.decision_id)}
-                    disabled={accepting === rec.product_id}
+                    disabled={accepting === rec.decision_id}
                     className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
                   >
-                    {accepting === rec.product_id ? 'Accepting...' : '✓ Accept Decision'}
+                    {accepting === rec.decision_id ? 'Accepting...' : '✓ Accept Decision'}
                   </button>
                   <button
                     onClick={async () => {

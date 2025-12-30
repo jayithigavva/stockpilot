@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { dashboardAPI, decisionsAPI } from '@/lib/supabase'
@@ -9,10 +11,10 @@ import Link from 'next/link'
 interface DashboardStats {
   total_products: number
   total_inventory_value: number
-  total_cash_locked: number
-  high_risk_products: number
   pending_decisions: number
-  recent_decisions: any[]
+  total_cash_locked?: number
+  high_risk_products?: number
+  recent_decisions?: any[]
 }
 
 export default function DashboardPage() {
@@ -118,12 +120,12 @@ export default function DashboardPage() {
 
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-sm font-medium text-gray-500 mb-1">Cash Locked</h3>
-            <p className="text-3xl font-bold">{formatCurrency(stats.total_cash_locked)}</p>
+            <p className="text-3xl font-bold">{formatCurrency(stats.total_cash_locked || 0)}</p>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-sm font-medium text-gray-500 mb-1">High Risk Products</h3>
-            <p className="text-3xl font-bold text-red-600">{stats.high_risk_products}</p>
+            <p className="text-3xl font-bold text-red-600">{stats.high_risk_products || 0}</p>
           </div>
         </div>
 
@@ -146,11 +148,11 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold">Recent Decisions</h3>
           </div>
           <div className="p-6">
-            {stats.recent_decisions.length === 0 ? (
+            {(stats.recent_decisions || []).length === 0 ? (
               <p className="text-gray-500">No decisions yet. Click "Run AI Recommendations" to generate suggestions.</p>
             ) : (
               <div className="space-y-4">
-                {stats.recent_decisions.map((decision) => (
+                {(stats.recent_decisions || []).map((decision) => (
                   <div key={decision.id} className="border-b pb-4 last:border-0">
                     <div className="flex justify-between items-start">
                       <div>
