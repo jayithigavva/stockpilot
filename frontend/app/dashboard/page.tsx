@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { dashboardAPI, decisionsAPI } from '@/lib/api'
+import { dashboardAPI, decisionsAPI } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
 interface DashboardStats {
@@ -21,12 +22,15 @@ export default function DashboardPage() {
   const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      router.push('/login')
-      return
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/login')
+        return
+      }
+      loadDashboard()
     }
-    loadDashboard()
+    checkAuth()
   }, [router])
 
   const loadDashboard = async () => {
@@ -77,8 +81,8 @@ export default function DashboardPage() {
           <div className="flex justify-between h-16 items-center">
             <h1 className="text-xl font-bold">StockPilot</h1>
             <button
-              onClick={() => {
-                localStorage.removeItem('access_token')
+              onClick={async () => {
+                await supabase.auth.signOut()
                 router.push('/login')
               }}
               className="text-gray-600 hover:text-gray-900"

@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { decisionsAPI } from '@/lib/api'
+import { decisionsAPI } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 
 interface Recommendation {
-  product_id: number
+  product_id: string
   product_name: string
+  sku?: string
   recommended_quantity: number
   current_inventory: number
   stockout_probability_before: number
@@ -19,55 +21,56 @@ interface Recommendation {
   cash_locked: number
   cash_freed: number
   explanation: string
+  decision_id: string
 }
 
 export default function DecisionsPage() {
   const router = useRouter()
   const [recommendations, setRecommendations] = useState<Recommendation[]>([])
   const [loading, setLoading] = useState(true)
-  const [accepting, setAccepting] = useState<number | null>(null)
+  const [accepting, setAccepting] = useState<string | null>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      router.push('/login')
-      return
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.push('/login')
+        return
+      }
+      loadRecommendations()
     }
-    loadRecommendations()
+    checkAuth()
   }, [router])
 
   const loadRecommendations = async () => {
     try {
-      // Fetch pending decisions with full details
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/decisions/recommendations`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setRecommendations(data)
-      } else {
-        // Fallback to list endpoint
-        const decisions = await decisionsAPI.list('PENDING')
-        // Convert to recommendation format (limited info)
-        setRecommendations(decisions.map((d: any) => ({
+      // Get pending decisions from Supabase
+      const decisions = await decisionsAPI.list('PENDING')
+      
+      // Get product details for each decision
+      const recommendations = await Promise.all(decisions.map(async (d: any) => {
+        const product = d.product || {}
+        return {
           product_id: d.product_id,
-          product_name: d.product_name,
-          recommended_quantity: d.recommended_quantity,
-          current_inventory: 0,
-          stockout_probability_before: 0,
-          stockout_probability_after: d.stockout_probability_after,
-          risk_category_before: 'MEDIUM',
+          product_name: product.name || 'Unknown Product',
+          sku: product.sku || '',
+          recommended_quantity: parseFloat(d.recommended_quantity),
+          current_inventory: parseFloat(d.current_inventory),
+          stockout_probability_before: parseFloat(d.stockout_probability_before),
+          stockout_probability_after: parseFloat(d.stockout_probability_after),
+          risk_category_before: d.risk_category_before,
           risk_category_after: d.risk_category_after,
-          expected_overstock_cost: 0,
-          expected_understock_cost: 0,
-          total_expected_loss: 0,
-          cash_locked: d.cash_locked,
-          cash_freed: 0,
-          explanation: `Order ${d.recommended_quantity} units. Cash locked: ₹${d.cash_locked.toLocaleString()}.`
-        })))
-      }
+          expected_overstock_cost: parseFloat(d.expected_overstock_cost),
+          expected_understock_cost: parseFloat(d.expected_understock_cost),
+          total_expected_loss: parseFloat(d.total_expected_loss),
+          cash_locked: parseFloat(d.cash_locked),
+          cash_freed: parseFloat(d.cash_freed || 0),
+          explanation: `Order ${d.recommended_quantity} units. Cash locked: ₹${parseFloat(d.cash_locked).toLocaleString()}. Risk: ${d.risk_category_before} → ${d.risk_category_after}.`,
+          decision_id: d.id
+        }
+      }))
+      
+      setRecommendations(recommendations)
     } catch (err) {
       console.error('Failed to load recommendations:', err)
     } finally {
@@ -75,8 +78,8 @@ export default function DecisionsPage() {
     }
   }
 
-  const handleAccept = async (decisionId: number) => {
-    setAccepting(decisionId)
+  const handleAccept = async (decisionId: string) => {
+    setAccepting(parseInt(decisionId))
     try {
       await decisionsAPI.accept(decisionId)
       await loadRecommendations()
@@ -124,8 +127,8 @@ export default function DecisionsPage() {
             <div className="space-x-4">
               <a href="/dashboard" className="text-gray-600 hover:text-gray-900">Dashboard</a>
               <button
-                onClick={() => {
-                  localStorage.removeItem('access_token')
+                onClick={async () => {
+                  await supabase.auth.signOut()
                   router.push('/login')
                 }}
                 className="text-gray-600 hover:text-gray-900"
@@ -206,15 +209,7 @@ export default function DecisionsPage() {
 
                 <div className="flex space-x-4">
                   <button
-                    onClick={() => {
-                      // Find decision ID from recommendations list
-                      decisionsAPI.list('PENDING').then(decisions => {
-                        const decision = decisions.find((d: any) => d.product_id === rec.product_id)
-                        if (decision) {
-                          handleAccept(decision.id)
-                        }
-                      })
-                    }}
+                    onClick={() => handleAccept(rec.decision_id)}
                     disabled={accepting === rec.product_id}
                     className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
                   >
@@ -222,12 +217,8 @@ export default function DecisionsPage() {
                   </button>
                   <button
                     onClick={async () => {
-                      const decisions = await decisionsAPI.list('PENDING')
-                      const decision = decisions.find((d: any) => d.product_id === rec.product_id)
-                      if (decision) {
-                        await decisionsAPI.reject(decision.id)
-                        await loadRecommendations()
-                      }
+                      await decisionsAPI.reject(rec.decision_id)
+                      await loadRecommendations()
                     }}
                     className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition"
                   >
