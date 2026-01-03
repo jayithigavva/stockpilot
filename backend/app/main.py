@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, products, decisions, dashboard, data
+from app.api import auth, products, decisions, dashboard, data, styles
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -30,6 +30,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(products.router, prefix="/api")
+app.include_router(styles.router, prefix="/api")
 app.include_router(decisions.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(data.router, prefix="/api")

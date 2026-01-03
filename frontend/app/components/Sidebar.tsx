@@ -17,6 +17,7 @@ export default function Sidebar() {
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
     { href: '/products', label: 'Products', icon: '📦' },
+    { href: '/styles', label: 'Styles', icon: '👟' },
     { href: '/sales', label: 'Sales History', icon: '📊' },
     { href: '/inventory', label: 'Inventory', icon: '📋' },
     { href: '/decisions', label: 'Decisions', icon: '🤖' },

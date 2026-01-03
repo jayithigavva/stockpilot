@@ -20,10 +20,14 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from models.demand_forecast import DemandForecaster
+from models.size_share_forecast import SizeShareForecaster
 from simulation.demand_simulation import DemandSimulator
+from simulation.size_demand_simulation import SizeDemandSimulator
 from inventory.risk_estimator import RiskEstimator
 from economics.cost_model import CostModel
+from economics.footwear_cost_model import FootwearCostModel
 from optimization.reorder_optimizer import ReorderOptimizer
+from optimization.size_curve_optimizer import SizeCurveOptimizer
 from optimization.capital_allocator import CapitalAllocator
 from explainability.decision_explainer import DecisionExplainer
 

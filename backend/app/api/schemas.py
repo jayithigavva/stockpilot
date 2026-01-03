@@ -40,6 +40,11 @@ class ProductCreate(BaseModel):
     min_order_quantity: Optional[float] = 0
     order_multiple: Optional[float] = 1.0
     lead_time_days: Optional[int] = 14
+    # Footwear fields
+    style_id: Optional[int] = None
+    size: Optional[str] = None
+    color: Optional[str] = None
+    width: Optional[str] = None
 
 
 class ProductResponse(BaseModel):
@@ -104,6 +109,32 @@ class DecisionResponse(BaseModel):
     cash_locked: float
     stockout_probability_after: float
     risk_category_after: RiskCategory
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+# Style schemas (footwear)
+class StyleCreate(BaseModel):
+    name: str
+    style_code: str
+    category: Optional[str] = None
+    gender: Optional[str] = None
+    base_unit_cost: float
+    base_selling_price: float
+    lead_time_days: Optional[int] = 60
+
+
+class StyleResponse(BaseModel):
+    id: int
+    name: str
+    style_code: str
+    category: Optional[str] = None
+    gender: Optional[str] = None
+    base_unit_cost: float
+    base_selling_price: float
+    lead_time_days: int
     created_at: datetime
     
     class Config:

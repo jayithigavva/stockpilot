@@ -9,3 +9,8 @@ ADD COLUMN IF NOT EXISTS plan_type TEXT DEFAULT 'free';
 -- Create index for plan queries
 CREATE INDEX IF NOT EXISTS idx_brands_plan_type ON brands(plan_type);
 
+
+
+
+
+

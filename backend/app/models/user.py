@@ -42,5 +42,6 @@ class Brand(Base):
     users = relationship("User", back_populates="brand")
     products = relationship("Product", back_populates="brand", cascade="all, delete-orphan")
     suppliers = relationship("Supplier", back_populates="brand", cascade="all, delete-orphan")
+    styles = relationship("Style", back_populates="brand", cascade="all, delete-orphan")
     decisions = relationship("ReorderDecision", back_populates="brand", cascade="all, delete-orphan")
 

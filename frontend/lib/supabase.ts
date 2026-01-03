@@ -133,7 +133,8 @@ export const decisionsAPI = {
       .from('reorder_decisions')
       .select(`
         *,
-        product:products(id, name, sku)
+        product:products(id, name, sku),
+        style:styles(id, name, style_code)
       `)
       .order('created_at', { ascending: false })
 
@@ -447,7 +448,7 @@ export const inventoryAPI = {
       .from('inventory')
       .select(`
         *,
-        product:products(id, name, sku, unit_cost, selling_price)
+        product:products(id, name, sku, unit_cost, selling_price, style_id, size, color, width, style:styles(id, name, style_code))
       `)
       .order('last_updated', { ascending: false })
 
@@ -495,7 +496,8 @@ export const productsAPI = {
       .select(`
         *,
         inventory:inventory(current_quantity),
-        supplier:suppliers(name)
+        supplier:suppliers(name),
+        style:styles(id, name, style_code)
       `)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
@@ -515,6 +517,12 @@ export const productsAPI = {
       supplier_id: product.supplier_id,
       supplier_name: product.supplier?.name,
       current_inventory: product.inventory?.[0]?.current_quantity || 0,
+      // Footwear fields
+      style_id: product.style_id,
+      style: product.style,
+      size: product.size,
+      color: product.color,
+      width: product.width,
     }))
   },
 
@@ -548,9 +556,7 @@ export const productsAPI = {
   },
 
   create: async (product: any) => {
-    const { data: productData, error: productError } = await supabase
-      .from('products')
-      .insert({
+    const productDataToInsert: any = {
         sku: product.sku,
         name: product.name,
         description: product.description,
@@ -560,7 +566,19 @@ export const productsAPI = {
         min_order_quantity: product.min_order_quantity || 0,
         order_multiple: product.order_multiple || 1.0,
         supplier_id: product.supplier_id || null,
-      })
+    }
+
+    // Add footwear fields if provided
+    if (product.style_id) {
+      productDataToInsert.style_id = product.style_id
+      productDataToInsert.size = product.size || null
+      productDataToInsert.color = product.color || null
+      productDataToInsert.width = product.width || null
+    }
+
+    const { data: productData, error: productError } = await supabase
+      .from('products')
+      .insert(productDataToInsert)
       .select()
       .single()
 
@@ -734,6 +752,183 @@ export const dataAPI = {
     })
 
     return await dataAPI.uploadSales(salesData)
+  },
+}
+
+// Styles API for footwear
+export const stylesAPI = {
+  list: async () => {
+    const { data, error } = await supabase
+      .from('styles')
+      .select(`
+        *,
+        products:products(id, size, color, width, sku),
+        size_profiles:size_profiles(size, historical_share, sample_size),
+        size_curves:size_curves(id, name, size_distribution, min_order_total, is_default)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  get: async (id: string) => {
+    const { data, error } = await supabase
+      .from('styles')
+      .select(`
+        *,
+        products:products(id, size, color, width, sku, unit_cost, selling_price),
+        size_profiles:size_profiles(size, historical_share, sample_size),
+        size_curves:size_curves(id, name, size_distribution, min_order_total, order_multiple, is_default)
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  create: async (style: any) => {
+    const { data, error } = await supabase
+      .from('styles')
+      .insert({
+        name: style.name,
+        style_code: style.style_code,
+        category: style.category,
+        gender: style.gender,
+        base_unit_cost: style.base_unit_cost,
+        base_selling_price: style.base_selling_price,
+        lead_time_days: style.lead_time_days || 60,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  update: async (id: string, style: any) => {
+    const { data, error } = await supabase
+      .from('styles')
+      .update({
+        name: style.name,
+        style_code: style.style_code,
+        category: style.category,
+        gender: style.gender,
+        base_unit_cost: style.base_unit_cost,
+        base_selling_price: style.base_selling_price,
+        lead_time_days: style.lead_time_days,
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  delete: async (id: string) => {
+    const { error } = await supabase
+      .from('styles')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  },
+
+  // Size Profiles
+  getSizeProfiles: async (styleId: string) => {
+    const { data, error } = await supabase
+      .from('size_profiles')
+      .select('*')
+      .eq('style_id', styleId)
+      .order('size')
+
+    if (error) throw error
+    return data
+  },
+
+  updateSizeProfiles: async (styleId: string, profiles: any[]) => {
+    // Delete existing profiles
+    await supabase
+      .from('size_profiles')
+      .delete()
+      .eq('style_id', styleId)
+
+    // Insert new profiles
+    const profilesToInsert = profiles.map(p => ({
+      style_id: styleId,
+      size: p.size,
+      historical_share: p.historical_share,
+      sample_size: p.sample_size || 0,
+    }))
+
+    const { data, error } = await supabase
+      .from('size_profiles')
+      .insert(profilesToInsert)
+      .select()
+
+    if (error) throw error
+    return data
+  },
+
+  // Size Curves
+  getSizeCurves: async (styleId: string) => {
+    const { data, error } = await supabase
+      .from('size_curves')
+      .select('*')
+      .eq('style_id', styleId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  createSizeCurve: async (styleId: string, curve: any) => {
+    const { data, error } = await supabase
+      .from('size_curves')
+      .insert({
+        style_id: styleId,
+        name: curve.name,
+        size_distribution: curve.size_distribution,
+        min_order_total: curve.min_order_total,
+        order_multiple: curve.order_multiple || 1,
+        factory_valid: curve.factory_valid !== false,
+        is_default: curve.is_default || false,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  updateSizeCurve: async (curveId: string, curve: any) => {
+    const { data, error } = await supabase
+      .from('size_curves')
+      .update({
+        name: curve.name,
+        size_distribution: curve.size_distribution,
+        min_order_total: curve.min_order_total,
+        order_multiple: curve.order_multiple,
+        factory_valid: curve.factory_valid,
+        is_default: curve.is_default,
+      })
+      .eq('id', curveId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  deleteSizeCurve: async (curveId: string) => {
+    const { error } = await supabase
+      .from('size_curves')
+      .delete()
+      .eq('id', curveId)
+
+    if (error) throw error
   },
 }
 

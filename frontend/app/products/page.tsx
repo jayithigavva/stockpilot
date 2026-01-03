@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { productsAPI, suppliersAPI } from '@/lib/supabase'
+import { productsAPI, suppliersAPI, stylesAPI } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
 import Sidebar from '../components/Sidebar'
 
@@ -20,12 +20,19 @@ interface Product {
   order_multiple: number
   supplier_id: string
   initial_quantity: number
+  // Footwear fields
+  style_id?: string
+  size?: string
+  color?: string
+  width?: string
+  is_footwear?: boolean
 }
 
 export default function ProductsPage() {
   const router = useRouter()
   const [products, setProducts] = useState<any[]>([])
   const [suppliers, setSuppliers] = useState<any[]>([])
+  const [styles, setStyles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [importMode, setImportMode] = useState<'manual' | 'csv'>('manual')
@@ -40,6 +47,11 @@ export default function ProductsPage() {
     order_multiple: 1,
     supplier_id: '',
     initial_quantity: 0,
+    is_footwear: false,
+    style_id: '',
+    size: '',
+    color: '',
+    width: '',
   })
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [csvData, setCsvData] = useState<any[]>([])
@@ -60,12 +72,14 @@ export default function ProductsPage() {
 
   const loadData = async () => {
     try {
-      const [productsData, suppliersData] = await Promise.all([
+      const [productsData, suppliersData, stylesData] = await Promise.all([
         productsAPI.list(),
         suppliersAPI.list(),
+        stylesAPI.list().catch(() => []), // Styles might not exist yet
       ])
       setProducts(productsData)
       setSuppliers(suppliersData)
+      setStyles(stylesData || [])
     } catch (err: any) {
       setError(err.message || 'Failed to load data')
     } finally {
@@ -79,7 +93,28 @@ export default function ProductsPage() {
     setSuccess('')
 
     try {
-      await productsAPI.create(formData)
+      const productData: any = {
+        sku: formData.sku,
+        name: formData.name,
+        description: formData.description,
+        unit_cost: formData.unit_cost,
+        selling_price: formData.selling_price,
+        lead_time_days: formData.lead_time_days,
+        min_order_quantity: formData.min_order_quantity,
+        order_multiple: formData.order_multiple,
+        supplier_id: formData.supplier_id || null,
+        initial_quantity: formData.initial_quantity,
+      }
+
+      // Add footwear fields if it's a footwear product
+      if (formData.is_footwear && formData.style_id) {
+        productData.style_id = formData.style_id
+        productData.size = formData.size || null
+        productData.color = formData.color || null
+        productData.width = formData.width || null
+      }
+
+      await productsAPI.create(productData)
       setSuccess('Product added successfully!')
       setFormData({
         sku: '',
@@ -92,6 +127,11 @@ export default function ProductsPage() {
         order_multiple: 1,
         supplier_id: '',
         initial_quantity: 0,
+        is_footwear: false,
+        style_id: '',
+        size: '',
+        color: '',
+        width: '',
       })
       await loadData()
     } catch (err: any) {
@@ -219,6 +259,18 @@ export default function ProductsPage() {
 
                 {importMode === 'manual' ? (
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="mb-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.is_footwear}
+                          onChange={(e) => setFormData({ ...formData, is_footwear: e.target.checked, style_id: e.target.checked ? formData.style_id : '' })}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700">This is a footwear product</span>
+                      </label>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">SKU *</label>
@@ -241,6 +293,61 @@ export default function ProductsPage() {
                         />
                       </div>
                     </div>
+
+                    {formData.is_footwear && (
+                      <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Style *</label>
+                          <select
+                            value={formData.style_id}
+                            onChange={(e) => setFormData({ ...formData, style_id: e.target.value })}
+                            required={formData.is_footwear}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="">Select style</option>
+                            {styles.map((s) => (
+                              <option key={s.id} value={s.id}>{s.name} ({s.style_code})</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
+                          <select
+                            value={formData.size}
+                            onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="">Select size</option>
+                            {['6', '7', '8', '9', '10', '11', '12'].map((size) => (
+                              <option key={size} value={size}>Size {size}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                          <input
+                            type="text"
+                            value={formData.color}
+                            onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                            placeholder="e.g., Black, White, Red"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Width</label>
+                          <select
+                            value={formData.width}
+                            onChange={(e) => setFormData({ ...formData, width: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          >
+                            <option value="">Select width</option>
+                            <option value="N">Narrow (N)</option>
+                            <option value="M">Medium (M)</option>
+                            <option value="W">Wide (W)</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -410,6 +517,7 @@ export default function ProductsPage() {
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Style/Size</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
@@ -421,9 +529,25 @@ export default function ProductsPage() {
                       <tr key={product.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{product.sku}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">{product.name}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {product.style_id ? (
+                            <div className="flex flex-col">
+                              <span className="font-medium">{product.style?.name || 'Style'}</span>
+                              {product.size && (
+                                <span className="text-xs text-gray-500">
+                                  Size {product.size}
+                                  {product.color && ` • ${product.color}`}
+                                  {product.width && ` • ${product.width === 'N' ? 'Narrow' : product.width === 'W' ? 'Wide' : 'Medium'}`}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 text-sm text-gray-600">{formatCurrency(product.unit_cost)}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{formatCurrency(product.selling_price)}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{product.current_inventory.toFixed(0)}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{product.current_inventory?.toFixed(0) || '0'}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{product.lead_time_days} days</td>
                       </tr>
                     ))}
@@ -437,4 +561,9 @@ export default function ProductsPage() {
     </div>
   )
 }
+
+
+
+
+
 

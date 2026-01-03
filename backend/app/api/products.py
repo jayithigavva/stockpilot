@@ -36,7 +36,12 @@ def list_products(
             "unit_cost": product.unit_cost,
             "selling_price": product.selling_price,
             "lead_time_days": product.lead_time_days,
-            "current_inventory": inventory.current_quantity if inventory else 0.0
+            "current_inventory": inventory.current_quantity if inventory else 0.0,
+            # Footwear fields
+            "style_id": product.style_id,
+            "size": product.size,
+            "color": product.color,
+            "width": product.width,
         }
         result.append(product_dict)
     

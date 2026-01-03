@@ -73,3 +73,8 @@
 - Sensitive data (products, inventory) is still protected by brand_id-based RLS policies
 - All other RLS policies remain intact and secure
 
+
+
+
+
+
