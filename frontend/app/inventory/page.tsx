@@ -43,7 +43,7 @@ export default function InventoryPage() {
 
   // Group inventory by style for footwear products
   const groupByStyle = () => {
-    const styleGroups: { [key: string]: any[] } = {}
+    const styleGroups: { [key: string]: { style: any; items: any[]; totalQuantity: number; totalValue: number } } = {}
     const regularProducts: any[] = []
 
     inventory.forEach((item) => {
