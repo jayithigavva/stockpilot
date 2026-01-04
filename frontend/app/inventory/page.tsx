@@ -326,7 +326,6 @@ export default function InventoryPage() {
     </div>
   )
 }
-            {(() => {
               const { styleGroups, regularProducts } = groupByStyle()
               const styleKeys = Object.keys(styleGroups)
               
@@ -486,6 +485,4 @@ export default function InventoryPage() {
     </div>
   )
 }
-
-
 
