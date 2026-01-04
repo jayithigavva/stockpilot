@@ -102,7 +102,10 @@ export default function InventoryPage() {
       <div className="flex-1 flex flex-col">
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-6 py-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Inventory Management</h1>
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Footwear Inventory</h1>
+              <p className="text-sm text-gray-600 mt-1">View inventory by style with size breakdowns</p>
+            </div>
           </div>
         </div>
 

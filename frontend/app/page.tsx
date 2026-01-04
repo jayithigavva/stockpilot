@@ -22,7 +22,7 @@ export default function Home() {
             </h1>
             <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-primary-400 to-transparent mx-auto mb-10"></div>
             <p className="text-xl md:text-2xl lg:text-3xl text-gray-200 mb-14 max-w-3xl mx-auto leading-relaxed font-display font-light tracking-wide italic">
-              AI-driven inventory management that optimizes decisions, minimizes risk, and maximizes cash efficiency for D2C brands
+              AI-driven inventory management for footwear brands. Optimize size-level decisions, minimize risk, and maximize cash efficiency.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <Link
@@ -52,7 +52,7 @@ export default function Home() {
               </span>
             </h2>
             <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-primary-600 to-transparent mx-auto"></div>
-            <p className="text-xl md:text-2xl text-gray-700 font-light max-w-2xl mx-auto tracking-wide">Powerful features for smart inventory management</p>
+            <p className="text-xl md:text-2xl text-gray-700 font-light max-w-2xl mx-auto tracking-wide">Powerful features for footwear inventory management</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-gradient-to-br from-navy-900 to-navy-800 text-white p-8 rounded-2xl shadow-2xl transform hover:scale-105 transition">
@@ -138,7 +138,7 @@ export default function Home() {
           <h2 className="text-5xl md:text-6xl font-display font-bold tracking-tight">Ready to Optimize Your Inventory?</h2>
           <div className="w-24 h-0.5 bg-white/50 mx-auto"></div>
           <p className="text-xl md:text-2xl mb-12 text-gray-100 font-light max-w-3xl mx-auto tracking-wide">
-            Join D2C brands using AI to make smarter inventory decisions
+            Join footwear brands using AI to make smarter size-level inventory decisions
           </p>
           <Link
             href="/register"

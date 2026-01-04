@@ -205,7 +205,10 @@ export default function ProductsPage() {
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-6 py-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-semibold text-gray-900">Products</h1>
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900">Footwear Products</h1>
+                <p className="text-sm text-gray-600 mt-1">Manage your footwear products, styles, and sizes</p>
+              </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowAddForm(!showAddForm)}

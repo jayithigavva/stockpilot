@@ -4,7 +4,8 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { dashboardAPI, decisionsAPI } from '@/lib/supabase'
+import Link from 'next/link'
+import { dashboardAPI, decisionsAPI, inventoryAPI, stylesAPI, settingsAPI } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
 import DecisionCard from '../components/DecisionCard'
 import DecisionDetails from '../components/DecisionDetails'
@@ -21,6 +22,8 @@ interface DashboardStats {
   pending_decisions_list: any[]
   available_cash: number
   free_plan_days_remaining: number | null
+  total_inventory_units?: number
+  total_styles?: number
 }
 
 interface SelectedDecision {
@@ -64,8 +67,24 @@ export default function DashboardPage() {
 
   const loadDashboard = async () => {
     try {
-      const data = await dashboardAPI.getStats()
-      setStats(data as DashboardStats)
+      const [dashboardData, inventoryData, stylesData] = await Promise.all([
+        dashboardAPI.getStats(),
+        inventoryAPI.list().catch(() => []),
+        stylesAPI.list().catch(() => []),
+      ])
+      
+      // Calculate total inventory units
+      const totalUnits = inventoryData.reduce((sum: number, item: any) => {
+        return sum + (item.current_quantity || 0)
+      }, 0)
+      
+      const statsData = {
+        ...dashboardData,
+        total_inventory_units: totalUnits,
+        total_styles: stylesData.length || 0,
+      } as DashboardStats
+      
+      setStats(statsData)
     } catch (err) {
       console.error('Failed to load dashboard:', err)
     } finally {
@@ -156,7 +175,8 @@ export default function DashboardPage() {
           <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">Inventory Health</h1>
+                <h1 className="text-2xl font-semibold text-gray-900">Footwear Inventory Health</h1>
+                <p className="text-sm text-gray-600 mt-1">AI-powered inventory management for footwear brands</p>
                 {stats.free_plan_days_remaining !== null && stats.free_plan_days_remaining <= 7 && (
                   <div className="mt-2 flex items-center gap-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -178,19 +198,47 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Card 1: Inventory Value */}
               <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
-                <div className="text-sm font-medium text-gray-600 mb-1">Total Inventory</div>
+                <div className="text-sm font-medium text-gray-600 mb-1">Total Inventory Value</div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   {formatCurrency(stats.total_inventory_value)}
                 </div>
                 <div className="text-xs text-gray-600">
-                  {formatCurrency(stats.inventory_at_risk)} at risk
+                  {stats.total_inventory_units?.toFixed(0) || 0} units • {formatCurrency(stats.inventory_at_risk)} at risk
                 </div>
               </div>
 
-              {/* Card 2: Stockout Risk */}
+              {/* Card 2: Inventory Units */}
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-6 border border-indigo-200">
+                <div className="text-sm font-medium text-gray-600 mb-1">Total Units</div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">
+                  {stats.total_inventory_units?.toFixed(0) || 0}
+                </div>
+                <div className="text-xs text-gray-600">
+                  {stats.total_styles || 0} styles • {stats.total_products} products
+                </div>
+              </div>
+
+              {/* Card 3: Available Cash */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-sm font-medium text-gray-600">Available Cash</div>
+                  <Link
+                    href="/settings"
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Add Cash →
+                  </Link>
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">
+                  {formatCurrency(stats.available_cash)}
+                </div>
+                <div className="text-xs text-gray-600">For inventory purchases</div>
+              </div>
+
+              {/* Card 4: Stockout Risk */}
               <div className={`rounded-xl p-6 border ${
                 stats.high_risk_skus > 0 
                   ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200' 
@@ -206,23 +254,26 @@ export default function DashboardPage() {
                   {stats.high_risk_skus > 0 ? 'HIGH risk' : 'All clear'}
                 </div>
               </div>
+            </div>
 
-              {/* Card 3: Available Cash */}
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-                <div className="text-sm font-medium text-gray-600 mb-1">Available Cash</div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {formatCurrency(stats.available_cash)}
-                </div>
-                <div className="text-xs text-gray-600">For inventory purchases</div>
-              </div>
-
-              {/* Card 4: Cash Freed */}
+            {/* Additional Stats Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Cash Freed */}
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
-                <div className="text-sm font-medium text-gray-600 mb-1">Cash Freed</div>
+                <div className="text-sm font-medium text-gray-600 mb-1">Cash Freed This Cycle</div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   {formatCurrency(stats.cash_freed)}
                 </div>
-                <div className="text-xs text-gray-600">This cycle</div>
+                <div className="text-xs text-gray-600">Optimized from previous decisions</div>
+              </div>
+
+              {/* Pending Decisions */}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 border border-amber-200">
+                <div className="text-sm font-medium text-gray-600 mb-1">Pending Decisions</div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">
+                  {stats.pending_decisions}
+                </div>
+                <div className="text-xs text-gray-600">Awaiting your review</div>
               </div>
             </div>
           </div>

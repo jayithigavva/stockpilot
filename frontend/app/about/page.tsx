@@ -20,7 +20,7 @@ export default function AboutPage() {
           </h1>
           <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-primary-400 to-transparent mx-auto mb-8"></div>
           <p className="text-xl md:text-2xl lg:text-3xl text-gray-200 max-w-4xl mx-auto font-display font-light italic leading-relaxed tracking-wide">
-            We're on a mission to help D2C brands optimize their inventory decisions using AI and data science.
+            We're on a mission to help footwear brands optimize their inventory decisions using AI and data science. Specialized in size-level inventory management.
           </p>
         </div>
       </section>

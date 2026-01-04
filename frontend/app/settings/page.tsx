@@ -73,7 +73,10 @@ export default function SettingsPage() {
       <div className="flex-1 flex flex-col">
         <div className="bg-white border-b">
           <div className="max-w-7xl mx-auto px-6 py-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Brand Settings</h1>
+              <p className="text-sm text-gray-600 mt-1">Manage your footwear brand settings and available cash</p>
+            </div>
           </div>
         </div>
 
