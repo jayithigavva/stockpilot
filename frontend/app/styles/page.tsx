@@ -35,6 +35,7 @@ export default function StylesPage() {
   })
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -61,8 +62,23 @@ export default function StylesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setError('')
     setSuccess('')
+    setSubmitting(true)
+
+    // Validate required fields
+    if (!formData.name || !formData.style_code) {
+      setError('Please fill in all required fields (Style Name and Style Code)')
+      setSubmitting(false)
+      return
+    }
+
+    if (formData.base_unit_cost <= 0 || formData.base_selling_price <= 0) {
+      setError('Base Unit Cost and Base Selling Price must be greater than 0')
+      setSubmitting(false)
+      return
+    }
 
     try {
       await stylesAPI.create(formData)
@@ -78,8 +94,13 @@ export default function StylesPage() {
       })
       setShowAddForm(false)
       await loadStyles()
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000)
     } catch (err: any) {
-      setError(err.message || 'Failed to add style')
+      console.error('Error adding style:', err)
+      setError(err.message || 'Failed to add style. Please try again.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -227,9 +248,14 @@ export default function StylesPage() {
 
                   <button
                     type="submit"
-                    className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                    disabled={submitting}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handleSubmit(e)
+                    }}
+                    className="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Add Style
+                    {submitting ? 'Adding Style...' : 'Add Style'}
                   </button>
                 </form>
               </div>

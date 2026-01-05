@@ -18,15 +18,23 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setError('')
     setLoading(true)
+
+    if (!email || !password) {
+      setError('Please enter both email and password')
+      setLoading(false)
+      return
+    }
 
     try {
       const response = await authAPI.login(email, password)
       // Token is stored automatically by Supabase
       router.push('/dashboard')
     } catch (err: any) {
-      setError(err.message || 'Login failed')
+      console.error('Login error:', err)
+      setError(err.message || 'Login failed. Please check your credentials and try again.')
     } finally {
       setLoading(false)
     }
@@ -76,7 +84,11 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white py-4 rounded-xl hover:from-primary-700 hover:to-primary-800 transition font-bold text-lg shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
+            onClick={(e) => {
+              e.preventDefault()
+              handleSubmit(e)
+            }}
+            className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white py-4 rounded-xl hover:from-primary-700 hover:to-primary-800 transition font-bold text-lg shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>

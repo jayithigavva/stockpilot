@@ -15,6 +15,7 @@ export default function SettingsPage() {
   const [availableCash, setAvailableCash] = useState(0)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [updating, setUpdating] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,15 +43,28 @@ export default function SettingsPage() {
 
   const handleUpdateCash = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setError('')
     setSuccess('')
+    setUpdating(true)
+
+    if (isNaN(availableCash) || availableCash < 0) {
+      setError('Please enter a valid positive number')
+      setUpdating(false)
+      return
+    }
 
     try {
       await settingsAPI.updateAvailableCash(availableCash)
       setSuccess('Available cash updated successfully!')
       await loadSettings()
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000)
     } catch (err: any) {
-      setError(err.message || 'Failed to update cash')
+      console.error('Error updating cash:', err)
+      setError(err.message || 'Failed to update cash. Please try again.')
+    } finally {
+      setUpdating(false)
     }
   }
 
@@ -138,8 +152,12 @@ export default function SettingsPage() {
                   <input
                     type="number"
                     step="0.01"
-                    value={availableCash}
-                    onChange={(e) => setAvailableCash(parseFloat(e.target.value) || 0)}
+                    min="0"
+                    value={availableCash || ''}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 0 : parseFloat(e.target.value)
+                      setAvailableCash(isNaN(value) ? 0 : value)
+                    }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
                     placeholder="Enter available cash"
                   />
@@ -149,9 +167,14 @@ export default function SettingsPage() {
                 </div>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  disabled={updating}
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault()
+                    handleUpdateCash(e)
+                  }}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Update Cash
+                  {updating ? 'Updating...' : 'Update Cash'}
                 </button>
               </form>
             </div>
